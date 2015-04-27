@@ -1,10 +1,35 @@
 import numpy as np
 import os
 import cPickle
-
+from scipy import linalg
 
 datasets_dir = '../datasets/'
 
+def preprocess(x,contrast="instance",center="instance"):
+    if center=="instance":
+        means = np.mean(x,axis=1)
+        x -= means[:,np.newaxis]
+    elif center =="feature":
+        means = np.mean(x,axis=0)
+        x -= means[np.newaxis,:]
+    
+    if contrast=="instance":
+        contrasts = np.std(x,axis=1)
+        x /= contrasts[:,np.newaxis]
+    elif contrast =="feature":
+        contrasts = np.std(x,axis=0)
+        x /= contrasts[np.newaxis,:]
+    
+    return x
+
+def whiten(xtrain,xtest,regularization=10**-5):
+    total = np.concatenate((xtrain,xtest),axis=0)
+    sigma = np.dot(total.T,total) / float(total.shape[0])
+    U, S, V = linalg.svd(sigma)
+    tmp = np.dot(U, np.diag(1/np.sqrt(S+regularization)))
+    zca_mat = np.dot(tmp, U.T)
+    return np.dot(xtrain,zca_mat), np.dot(xtest,zca_mat)  
+    
 def one_hot(x,n):
 	if type(x) == list:
 		x = np.array(x)
