@@ -13,23 +13,24 @@ def preprocess(x,contrast="instance",center="instance"):
         means = np.mean(x,axis=0)
         x -= means[np.newaxis,:]
     
-    if contrast=="instance":
-        contrasts = np.std(x,axis=1)
-        x /= contrasts[:,np.newaxis]
-    elif contrast =="feature":
-        contrasts = np.std(x,axis=0)
-        x /= contrasts[np.newaxis,:]
+    # if contrast=="instance":
+    #     contrasts = np.std(x,axis=1)
+    #     x /= contrasts[:,np.newaxis]
+    # elif contrast =="feature":
+    #     contrasts = np.std(x,axis=0)
+    #     x /= contrasts[np.newaxis,:]
+    
     
     return x
 
-def whiten(xtrain,xtest,regularization=10**-5):
-    total = np.concatenate((xtrain,xtest),axis=0)
-    sigma = np.dot(total.T,total) / float(total.shape[0])
+def zca_whitening_matrix(xtrain,regularization=10**-5):
+    sigma = np.dot(xtrain.T,xtrain) / float(xtrain.shape[0])
     U, S, V = linalg.svd(sigma)
     tmp = np.dot(U, np.diag(1/np.sqrt(S+regularization)))
     zca_mat = np.dot(tmp, U.T)
-    return np.dot(xtrain,zca_mat), np.dot(xtest,zca_mat)  
+    return zca_mat
     
+
 def one_hot(x,n):
 	if type(x) == list:
 		x = np.array(x)
@@ -71,6 +72,15 @@ def cifar(ntrain=50000, ntest= 10000, onehot=True):
   
   for i in range(len(teTempY)):
     teY[i][teTempY[i]] = 1.
+  
+  # trX = preprocess(trX.reshape((50000,3072)))
+  # teX = preprocess(teX.reshape((10000, 3072)))
+  
+
+  # zca_mat = zca_whitening_matrix(trX)
+  
+  # trX = np.dot(trX, zca_mat.T)
+  # teX = np.dot(teX, zca_mat.T)
   
   return trX.reshape((50000,3072)), teX.reshape((10000,3072)), trY, teY
   #return tempY
