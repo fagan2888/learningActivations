@@ -89,8 +89,8 @@ print trX.shape
 X = T.ftensor4()
 Y = T.fmatrix()
 
-w = init_weights((32, 3, 8, 8))
-w2 = init_weights((64, 32, 6, 6))
+w = init_weights((32, 3, 3, 3))
+w2 = init_weights((64, 32, 3, 3))
 w3 = init_weights((128, 64, 3, 3))
 w4 = init_weights((128 * 3 * 3, 625))
 w5 = init_weights((625, 625))
@@ -140,6 +140,6 @@ def train_some_epochs(trX=trX, trY=trY, teX=teX, teY=teY, num_epochs=10):
     
     for start, end in zip(range(0, len(trX), 128), range(128, len(trX), 128)):
       cost = train(trX[start:end], trY[start:end])
-    print np.mean(np.argmax(teY, axis=1) == predict(teX))
+    print "test acc: " + str(np.mean(np.argmax(teY, axis=1) == predict(teX))) + "\ttrain acc:" + str(np.mean(np.argmax(trY[1:10000], axis=1) == predict(trX[1:10000])))
     
     
