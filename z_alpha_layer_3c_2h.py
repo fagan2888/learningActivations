@@ -87,7 +87,7 @@ print trX.shape
 X = T.ftensor4()
 Y = T.fmatrix()
 
-w = init_weights((32, 3, 5, 5))
+w = init_weights((32, 3, 3, 3))
 w2 = init_weights((64, 32, 3, 3))
 w3 = init_weights((128, 64, 3, 3))
 w4 = init_weights((128 * 3 * 3, 625))
@@ -129,7 +129,11 @@ updates.append([alpha_h2, alpha_h2 - .001 * T.grad(cost, alpha_h2)])
 train = theano.function(inputs=[X, Y], outputs=cost, updates=updates, allow_input_downcast=True)
 predict = theano.function(inputs=[X], outputs=y_x, allow_input_downcast=True)
 
-for i in range(300):
+for i in range(10):
+  
+    
     for start, end in zip(range(0, len(trX), 128), range(128, len(trX), 128)):
         cost = train(trX[start:end], trY[start:end])
     print np.mean(np.argmax(teY, axis=1) == predict(teX))
+    
+    

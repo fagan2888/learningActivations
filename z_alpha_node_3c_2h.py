@@ -7,6 +7,8 @@ from theano.tensor.nnet.conv import conv2d
 from theano.tensor.signal.downsample import max_pool_2d
 
 srng = RandomStreams()
+np.random.seed()
+
 
 def floatX(X):
     return np.asarray(X, dtype=theano.config.floatX)
@@ -87,8 +89,8 @@ print trX.shape
 X = T.ftensor4()
 Y = T.fmatrix()
 
-w = init_weights((32, 3, 5, 5))
-w2 = init_weights((64, 32, 3, 3))
+w = init_weights((32, 3, 8, 8))
+w2 = init_weights((64, 32, 6, 6))
 w3 = init_weights((128, 64, 3, 3))
 w4 = init_weights((128 * 3 * 3, 625))
 w5 = init_weights((625, 625))
@@ -106,8 +108,8 @@ b_o = theano.shared(floatX(np.zeros(10)))
 alpha_c1 = theano.shared(floatX(np.asarray([.5,])), broadcastable=[True] )
 alpha_c2 = theano.shared(floatX(np.asarray([.5,])), broadcastable=[True] )
 alpha_c3 = theano.shared(floatX(np.asarray([.5,])), broadcastable=[True] )
-alpha_h1 = theano.shared(floatX(np.asarray([.5,])), broadcastable=[True] )
-alpha_h2 = theano.shared(floatX(np.asarray([.5,])), broadcastable=[True] )
+alpha_h1 = theano.shared(floatX(np.zeros(625) + .5))
+alpha_h2= theano.shared(floatX(np.zeros(625) + .5))
 
 noise_l1, noise_l2, noise_l3, noise_l4, noise_l5, noise_py_x = model(X, w, w2, w3, w4, w5, w_o, b_h1, b_h2, b_o, 0.2, 0.5)
 l1, l2, l3, l4, l5, py_x = model(X, w, w2, w3, w4, w5, w_o, b_h1, b_h2, b_o, 0., 0.)
@@ -116,20 +118,28 @@ y_x = T.argmax(py_x, axis=1)
 
 cost = T.mean(T.nnet.categorical_crossentropy(noise_py_x, Y))
 params = [w, w2, w3, w4, w5, w_o,
-          b_c1, b_c2, b_c3, b_h1, b_h2, b_o,
+          b_c1, b_c2, b_c3, b_h1, b_h2, b_o, alpha_h1, alpha_h2,
         ]
 updates = RMSprop(cost, params, lr=0.001)
 updates.append([alpha_c1, alpha_c1 - .001 * T.grad(cost, alpha_c1)])
 updates.append([alpha_c2, alpha_c2 - .001 * T.grad(cost, alpha_c2)])
 updates.append([alpha_c3, alpha_c3 - .001 * T.grad(cost, alpha_c3)])
-updates.append([alpha_h1, alpha_h1 - .001 * T.grad(cost, alpha_h1)])
-updates.append([alpha_h2, alpha_h2 - .001 * T.grad(cost, alpha_h2)])
 
 
 train = theano.function(inputs=[X, Y], outputs=cost, updates=updates, allow_input_downcast=True)
 predict = theano.function(inputs=[X], outputs=y_x, allow_input_downcast=True)
 
-for i in range(300):
+def train_some_epochs(trX=trX, trY=trY, teX=teX, teY=teY, num_epochs=10):
+  for i in range(num_epochs):
+    ####################################
+    # shuffle the rows before each epoch
+    ####################################
+    p = np.random.permutation(len(trX))
+    trX = trX[p]
+    trY = trY[p]
+    
     for start, end in zip(range(0, len(trX), 128), range(128, len(trX), 128)):
-        cost = train(trX[start:end], trY[start:end])
+      cost = train(trX[start:end], trY[start:end])
     print np.mean(np.argmax(teY, axis=1) == predict(teX))
+    
+    
