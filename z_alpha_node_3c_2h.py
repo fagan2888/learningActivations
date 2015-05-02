@@ -30,17 +30,20 @@ def dropout(X, p=0.):
         X /= retain_prob
     return X
 
-def RMSprop(cost, params, lr=0.001, rho=0.9, epsilon=1e-6, lambda_2=.005):
+def reg_L2(w,w2,w3,w4,w5,w_o):
+    reg = T.sum(w**2)
+    reg += T.sum(w2**2)
+    reg += T.sum(w3**2)
+    reg += T.sum(w4**2)
+    reg += T.sum(w5**2)
+    reg += T.sum(w_o**2)
+    return 0.5*reg
+
+def RMSprop(cost, params, lr=0.001, rho=0.9, epsilon=1e-6):
     grads = T.grad(cost=cost, wrt=params)
 
     updates = []
     for p, g in zip(params, grads):
-      
-        ###########################
-        #  Adding weight decay
-        ###########################
-        g += lambda_2 * p
-        
         
         acc = theano.shared(p.get_value() * 0.)
         acc_new = rho * acc + (1 - rho) * g ** 2
@@ -79,14 +82,7 @@ def model(X, w, w2, w3, w4, w5, w_o, b_h1, b_h2, b_o, p_drop_conv, p_drop_hidden
     pyx = softmax(T.dot(l5, w_o) + b_o )
     return l1, l2, l3, l4, l5, pyx
 
-def reg_L2(w,w2,w3,w4,w5,w_o):
-    reg = T.sum(w**2)
-    reg += T.sum(w2**2)
-    reg += T.sum(w3**2)
-    reg += T.sum(w4**2)
-    reg += T.sum(w5**2)
-    reg += T.sum(w_o**2)
-    return 0.5*reg
+
     
 # load mnist data
 
@@ -135,20 +131,22 @@ y_x = T.argmax(py_x, axis=1)
 
 
 
-lambda_2 = .005
+lambda_2 = .0005
+
 cost = T.mean(T.nnet.categorical_crossentropy(noise_py_x, Y)) + lambda_2*reg_L2(w,w2,w3,w4,w5,w_o)
+
 params = [w, w2, w3, w4, w5, w_o,
           b_c1, b_c2, b_c3, b_h1, b_h2, b_o,
         ]
 updates = RMSprop(cost, params, lr=0.001)
 
 
-updates.append([alpha_c1, alpha_c1 - .001 * T.grad(cost, alpha_c1) - .001 * lambda_2 * alpha_c1])
-updates.append([alpha_c2, alpha_c2 - .001 * T.grad(cost, alpha_c2) - .001 * lambda_2 * alpha_c1])
-updates.append([alpha_c3, alpha_c3 - .001 * T.grad(cost, alpha_c3) - .001 * lambda_2 * alpha_c1 ])
+updates.append([alpha_c1, alpha_c1 - .001 * T.grad(cost, alpha_c1) ])
+updates.append([alpha_c2, alpha_c2 - .001 * T.grad(cost, alpha_c2) ])
+updates.append([alpha_c3, alpha_c3 - .001 * T.grad(cost, alpha_c3) ])
 
-updates.append([alpha_h1, alpha_h1 - .001 * T.grad(cost, alpha_h1) - .001 * lambda_2 * alpha_h1])
-updates.append([alpha_h2, alpha_h2 - .001 * T.grad(cost, alpha_h2) - .001 * lambda_2 * alpha_h2])
+updates.append([alpha_h1, alpha_h1 - .001 * T.grad(cost, alpha_h1)])
+updates.append([alpha_h2, alpha_h2 - .001 * T.grad(cost, alpha_h2)])
 
 
 
