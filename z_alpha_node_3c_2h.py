@@ -79,6 +79,15 @@ def model(X, w, w2, w3, w4, w5, w_o, b_h1, b_h2, b_o, p_drop_conv, p_drop_hidden
     pyx = softmax(T.dot(l5, w_o) + b_o )
     return l1, l2, l3, l4, l5, pyx
 
+def reg_L2(w,w2,w3,w4,w5,w_o):
+    reg = T.sum(w**2)
+    reg += T.sum(w2**2)
+    reg += T.sum(w3**2)
+    reg += T.sum(w4**2)
+    reg += T.sum(w5**2)
+    reg += T.sum(w_o**2)
+    return 0.5*reg
+    
 # load mnist data
 
 # trX, teX, trY, teY = mnist(onehot=True)
@@ -126,14 +135,13 @@ y_x = T.argmax(py_x, axis=1)
 
 
 
-
-cost = T.mean(T.nnet.categorical_crossentropy(noise_py_x, Y))
+lambda_2 = .005
+cost = T.mean(T.nnet.categorical_crossentropy(noise_py_x, Y)) + lambda_2*reg_L2(w,w2,w3,w4,w5,w_o)
 params = [w, w2, w3, w4, w5, w_o,
           b_c1, b_c2, b_c3, b_h1, b_h2, b_o,
         ]
 updates = RMSprop(cost, params, lr=0.001)
 
-lambda_2 = .005
 
 updates.append([alpha_c1, alpha_c1 - .001 * T.grad(cost, alpha_c1) - .001 * lambda_2 * alpha_c1])
 updates.append([alpha_c2, alpha_c2 - .001 * T.grad(cost, alpha_c2) - .001 * lambda_2 * alpha_c1])
