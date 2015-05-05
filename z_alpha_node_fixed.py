@@ -135,7 +135,7 @@ y_x = T.argmax(py_x, axis=1)
 
 
 
-lambda_2 = .002
+lambda_2 = T.scalar()
 
 cost = T.mean(T.nnet.categorical_crossentropy(noise_py_x, Y)) + lambda_2*reg_L2(w,w2,w3,w4,w5,w_o)
 
@@ -145,25 +145,26 @@ params = [w, w2, w3, w4, w5, w_o,
         
 
 learning_rate = T.scalar()
+alpha_lr = T.scalar()
 
 updates = RMSprop(cost, params, lr=learning_rate)
 
 
-updates.append([alpha_c1, alpha_c1 - learning_rate * T.grad(cost, alpha_c1) ])
-updates.append([alpha_c2, alpha_c2 - learning_rate * T.grad(cost, alpha_c2) ])
-updates.append([alpha_c3, alpha_c3 - learning_rate * T.grad(cost, alpha_c3) ])
+updates.append([alpha_c1, alpha_c1 - alpha_lr * T.grad(cost, alpha_c1) ])
+updates.append([alpha_c2, alpha_c2 - alpha_lr * T.grad(cost, alpha_c2) ])
+updates.append([alpha_c3, alpha_c3 - alpha_lr * T.grad(cost, alpha_c3) ])
 
-updates.append([alpha_h1, alpha_h1 - learning_rate * T.grad(cost, alpha_h1)])
-updates.append([alpha_h2, alpha_h2 - learning_rate * T.grad(cost, alpha_h2)])
+updates.append([alpha_h1, alpha_h1 - alpha_lr * T.grad(cost, alpha_h1)])
+updates.append([alpha_h2, alpha_h2 - alpha_lr * T.grad(cost, alpha_h2)])
 
 
 
-train = theano.function(inputs=[X, Y, learning_rate], outputs=cost, updates=updates, allow_input_downcast=True)
+train = theano.function(inputs=[X, Y, lambda_2, learning_rate, alpha_lr], outputs=cost, updates=updates, allow_input_downcast=True)
 predict = theano.function(inputs=[X], outputs=y_x, allow_input_downcast=True)
 
 
 
-def train_some_epochs(trX=trX, trY=trY, teX=teX, teY=teY, num_epochs=10, lr=.001):
+def train_some_epochs(trX=trX, trY=trY, teX=teX, teY=teY, num_epochs=10, lambda_2 = .001, lr=.001, alpha_lr=.001):
   for i in range(num_epochs):
     ####################################
     # shuffle the rows before each epoch
@@ -173,7 +174,7 @@ def train_some_epochs(trX=trX, trY=trY, teX=teX, teY=teY, num_epochs=10, lr=.001
     trY = trY[p]
     
     for start, end in zip(range(0, len(trX), 128), range(128, len(trX), 128)):
-      cost = train(trX[start:end], trY[start:end], lr)
+      cost = train(trX[start:end], trY[start:end], lambda_2, lr, alpha_lr)
     print "test acc: " + str(np.mean(np.argmax(teY, axis=1) == predict(teX))) + "\ttrain acc:" + str(np.mean(np.argmax(trY[1:10000], axis=1) == predict(trX[1:10000])))
     
     
